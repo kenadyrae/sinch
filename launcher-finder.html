@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinch Conversation Starters — inline test v5</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0; padding: 40px 24px; background: #f5f6f7; color: #1a2126;
+  }
+  .page { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: #626c73; font-size: 14px; margin: 0 0 28px; }
+  .panel {
+    background: #fff; border: 1px solid #dce2e5; border-radius: 12px;
+    padding: 20px; margin-bottom: 24px;
+  }
+  .panel h2 {
+    font-size: 14px; margin: 0 0 12px;
+    text-transform: uppercase; letter-spacing: .04em; color: #626c73;
+  }
+  #status, #console, #tree {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px; white-space: pre-wrap; line-height: 1.6; margin: 0;
+    word-break: break-word;
+  }
+  #console { color: #8f3d1f; }
+  #tree { color: #1454a8; max-height: 340px; overflow: auto; }
+  .ok  { color: #2b7845; }
+  .bad { color: #bd3c41; }
+  .dim { color: #626c73; }
+  button.manual {
+    font: inherit; font-size: 13px; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid #006063; background: #006063; color: #fff; cursor: pointer;
+    margin-right: 8px; margin-top: 8px;
+  }
+  button.rescan {
+    background: #fff; color: #006063;
+  }
+
+  /* ---- the part that matters ---- */
+  #cs-inline {
+    position: relative;
+    transform: translateZ(0);
+    width: 400px;
+    height: 600px;
+    overflow: hidden;
+    border: 1px dashed #c9d1d6;
+    border-radius: 12px;
+  }
+  #cs-inline > [id^="SinchEngageWidget-"] {
+    position: static;
+    inset: auto;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Inline widget test (v5)</h1>
+  <p class="sub">Waits for the lazy-loaded app to actually render before looking for the launcher.</p>
+
+  <div class="panel">
+    <h2>Status</h2>
+    <p id="status">Starting…</p>
+  </div>
+
+  <div class="panel">
+    <h2>Clickable things found inside the widget</h2>
+    <p id="tree" class="dim">(waiting for the app to render…)</p>
+    <div id="manual-buttons"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Captured warnings &amp; errors</h2>
+    <p id="console" class="dim">(none yet)</p>
+  </div>
+
+  <div class="panel">
+    <h2>Widget</h2>
+    <div id="cs-inline"></div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    const out = [];
+    function render() {
+      const el = document.getElementById('console');
+      if (!el) return;
+      el.className = '';
+      el.textContent = out.join('\n');
+    }
+    ['warn', 'error'].forEach(function (kind) {
+      const original = console[kind];
+      console[kind] = function () {
+        try {
+          const parts = Array.prototype.map.call(arguments, function (a) {
+            if (a instanceof Error) return a.message;
+            if (typeof a === 'object') { try { return JSON.stringify(a); } catch (e) { return String(a); } }
+            return String(a);
+          });
+          out.push('[' + kind + '] ' + parts.join(' '));
+          if (document.getElementById('console')) render();
+        } catch (e) {}
+        return original.apply(console, arguments);
+      };
+    });
+    window.addEventListener('error', function (e) {
+      out.push('[error] ' + (e.message || 'script error'));
+      if (document.getElementById('console')) render();
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      out.push('[rejected] ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+      if (document.getElementById('console')) render();
+    });
+  })();
+</script>
+
+<script
+  src="https://releases.conversation-starters.au.saas.sinch.com/widget/latest/sinch-convs-widget-sdk.es.js"
+  type="module"
+  referrerpolicy="no-referrer-when-downgrade"
+></script>
+
+<script>
+  const ID = 'e84911d4-af0b-41cb-8143-3663db53e94c';
+  const REGION = 'AU';
+  let HOST = null;
+
+  function log(msg, cls) {
+    const el = document.getElementById('status');
+    if (el.textContent === 'Starting…') el.textContent = '';
+    const line = document.createElement('span');
+    if (cls) line.className = cls;
+    line.textContent = msg + '\n';
+    el.appendChild(line);
+  }
+
+  function wait(test, ms, label) {
+    return new Promise(function (resolve, reject) {
+      const t0 = Date.now();
+      (function c() {
+        let r;
+        try { r = test(); } catch (e) { r = null; }
+        if (r) return resolve(r);
+        if (Date.now() - t0 > ms) return reject(new Error(label));
+        setTimeout(c, 300);
+      })();
+    });
+  }
+
+  function deepQueryAll(root, selector, found) {
+    found = found || [];
+    if (!root || !root.querySelectorAll) return found;
+    try {
+      root.querySelectorAll(selector).forEach(function (el) { found.push(el); });
+      root.querySelectorAll('*').forEach(function (el) {
+        if (el.shadowRoot) deepQueryAll(el.shadowRoot, selector, found);
+      });
+    } catch (e) {}
+    return found;
+  }
+
+  const SELECTOR = 'button, sinch-button, [role="button"], a, [class*="rabber"], [class*="auncher"], [class*="icon"], img, svg, div';
+
+  function findCandidates() {
+    if (!HOST || !HOST.shadowRoot) return [];
+    return deepQueryAll(HOST.shadowRoot, SELECTOR).filter(function (el) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) return false;
+      // Skip the outermost wrappers — we want the actual control
+      if (el.hasAttribute && el.hasAttribute('data-app')) return false;
+      return true;
+    });
+  }
+
+  function describe(el) {
+    const bits = [el.tagName.toLowerCase()];
+    if (el.id) bits.push('#' + el.id);
+    if (el.className && typeof el.className === 'string' && el.className.trim()) {
+      bits.push('.' + el.className.trim().split(/\s+/).slice(0, 2).join('.'));
+    }
+    const label = (el.getAttribute && (el.getAttribute('aria-label') || el.getAttribute('text'))) || '';
+    const text = (el.textContent || '').trim().slice(0, 40);
+    if (label) bits.push('[aria-label="' + label + '"]');
+    else if (text) bits.push('"' + text + '"');
+    const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    if (r) bits.push('(' + Math.round(r.width) + '×' + Math.round(r.height) + ')');
+    return bits.join(' ');
+  }
+
+  function renderCandidates(candidates) {
+    const tree = document.getElementById('tree');
+    const box = document.getElementById('manual-buttons');
+    box.innerHTML = '';
+
+    if (!candidates.length) {
+      tree.className = 'bad';
+      tree.textContent = 'Still nothing found.\n\nShadow root contents:\n\n'
+        + (HOST && HOST.shadowRoot ? HOST.shadowRoot.innerHTML.slice(0, 2000) : '(no shadow root)');
+    } else {
+      tree.className = '';
+      tree.textContent = candidates.map(function (el, i) { return i + ': ' + describe(el); }).join('\n');
+    }
+
+    const rescan = document.createElement('button');
+    rescan.className = 'manual rescan';
+    rescan.textContent = '↻ Re-scan now';
+    rescan.onclick = function () { renderCandidates(findCandidates()); };
+    box.appendChild(rescan);
+
+    candidates.slice(0, 20).forEach(function (el, i) {
+      const b = document.createElement('button');
+      b.className = 'manual';
+      b.textContent = 'Click #' + i;
+      b.onclick = function () {
+        try { el.click(); } catch (e) {}
+        try { el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })); } catch (e) {}
+        log('→ clicked #' + i + ': ' + describe(el), 'dim');
+      };
+      box.appendChild(b);
+    });
+  }
+
+  (async function () {
+    log('Page protocol: ' + location.protocol, 'ok');
+
+    try {
+      await wait(function () { return window.SinchSdk && window.SinchSdk.initialize; }, 15000, 'SDK never became available.');
+      log('✓ SDK loaded', 'ok');
+    } catch (err) { log('✗ ' + err.message, 'bad'); return; }
+
+    try { SinchSdk.initialize(ID, REGION); log('→ initialize() called', 'dim'); }
+    catch (err) { log('✗ initialize() threw: ' + err.message, 'bad'); return; }
+
+    try {
+      HOST = await wait(function () { return document.getElementById('SinchEngageWidget-' + ID); }, 20000, 'Widget never appeared.');
+      log('✓ Widget element appeared', 'ok');
+    } catch (err) { log('✗ ' + err.message, 'bad'); return; }
+
+    document.getElementById('cs-inline').appendChild(HOST);
+    log('✓ Moved into the container', 'ok');
+
+    // The app chunk loads lazily — keep watching until something actually renders.
+    let candidates = [];
+    try {
+      candidates = await wait(function () {
+        const c = findCandidates();
+        return c.length ? c : null;
+      }, 30000, 'App never rendered anything measurable within 30s.');
+      log('✓ App rendered — found ' + candidates.length + ' candidate(s)', 'ok');
+    } catch (err) {
+      log('⚠ ' + err.message, 'bad');
+    }
+
+    renderCandidates(candidates);
+
+    if (candidates.length) {
+      // Prefer a real control if one exists; otherwise take the smallest visible box,
+      // which is usually the launcher icon rather than a full-size wrapper.
+      const real = candidates.filter(function (el) {
+        const t = el.tagName.toLowerCase();
+        return t === 'button' || t === 'sinch-button' || el.getAttribute('role') === 'button';
+      });
+      const pick = real.length
+        ? real[0]
+        : candidates.slice().sort(function (a, b) {
+            const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+            return (ra.width * ra.height) - (rb.width * rb.height);
+          })[0];
+
+      try { pick.click(); } catch (e) {}
+      try { pick.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })); } catch (e) {}
+      log('→ auto-clicked: ' + describe(pick), 'dim');
+    }
+  })();
+</script>
+
+</body>
+</html>

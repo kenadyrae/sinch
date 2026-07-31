@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinch widget — control test (unmodified)</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 40px 24px;
+    background: #f5f6f7;
+    color: #1a2126;
+  }
+  .page { max-width: 700px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  p { color: #4b575e; line-height: 1.7; }
+  ol { color: #4b575e; line-height: 1.9; }
+  .note {
+    background: #fff;
+    border: 1px solid #dce2e5;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 24px;
+  }
+  strong { color: #1a2126; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <h1>Control test — unmodified widget</h1>
+  <p>
+    This page has <strong>none</strong> of the inline code on it. It is the original
+    embed snippet exactly as Sinch supplies it. The widget should appear as a floating
+    icon in the bottom-right corner of the screen.
+  </p>
+
+  <div class="note">
+    <p><strong>What to do:</strong></p>
+    <ol>
+      <li>Click the icon in the bottom-right corner to open the form.</li>
+      <li>Fill in the first screen and click through to the next step.</li>
+      <li>Note whether the second screen renders properly.</li>
+    </ol>
+    <p>
+      If the second screen is <strong>also broken here</strong>, the problem is in the
+      widget itself or its configuration — not in the inline embedding.
+    </p>
+    <p>
+      If it <strong>works fine here</strong>, the inline code is interfering and I'll
+      know exactly where to look next.
+    </p>
+  </div>
+</div>
+
+<!-- The original embed, unchanged -->
+<script
+  src="https://releases.conversation-starters.au.saas.sinch.com/widget/latest/sinch-convs-widget-sdk.es.js"
+  type="module"
+  referrerpolicy="no-referrer-when-downgrade"
+  onload="SinchSdk.initialize('e84911d4-af0b-41cb-8143-3663db53e94c', 'AU')"
+  async
+></script>
+
+</body>
+</html>

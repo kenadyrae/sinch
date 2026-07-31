@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinch Conversation Starters — demos</title>
+<style>
+  :root {
+    --ink:      #1a2126;
+    --muted:    #4b575e;
+    --faint:    #626c73;
+    --line:     #dce2e5;
+    --surface:  #ffffff;
+    --bg:       #f5f6f7;
+    --accent:   #006063;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 64px 24px 96px;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; }
+
+  header { margin-bottom: 48px; }
+  h1 {
+    font-size: 32px;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 16px;
+    max-width: 52ch;
+  }
+
+  h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+    margin: 40px 0 14px;
+    font-weight: 600;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  a.card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  a.card:hover {
+    border-color: #b7c1c7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(10, 39, 61, 0.07);
+  }
+  a.card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .card-title {
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .arrow {
+    color: var(--faint);
+    font-weight: 400;
+    transition: transform .15s ease;
+  }
+  a.card:hover .card-title .arrow { transform: translateX(3px); }
+
+  .card-desc {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e2f0e8;
+    color: #006063;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag.draft { background: #fceccb; color: #824703; }
+  .tag.tool  { background: #e0f1ff; color: #1454a8; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: 13px;
+  }
+  footer code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    background: #ebeef0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header>
+    <h1>Conversation Starters</h1>
+    <p>Inline embeds of the Sinch Conversation Starters widget, rendered as on-page components rather than corner popups.</p>
+  </header>
+
+  <!-- ==========================================================
+       LINKS
+
+       To add a page:
+         1. Upload the .html file to the repo
+         2. Copy one <a class="card"> block below
+         3. Change the href, title and description
+
+       The tag span is optional — remove it, or use
+       class="tag draft" / class="tag tool" for other colours.
+       ========================================================== -->
+
+  <h2>Live forms</h2>
+  <div class="list">
+
+    <a class="card" href="engage-widget-unbound-2026.html">
+      <div class="card-title">
+        HubSpot Unbound 2026 — Merch Registration
+        <span class="tag">Live</span>
+        <span class="arrow">→</span>
+      </div>
+      <div class="card-desc">Event signup form for booth merch drops. Opens automatically, top-left of its container.</div>
+    </a>
+
+    <!-- Copy this block for each new page
+    <a class="card" href="your-file-name.html">
+      <div class="card-title">
+        Page title here
+        <span class="tag draft">Draft</span>
+        <span class="arrow">→</span>
+      </div>
+      <div class="card-desc">One line describing what this page is.</div>
+    </a>
+    -->
+
+  </div>
+
+  <h2>Diagnostics</h2>
+  <div class="list">
+
+    <a class="card" href="control-test.html">
+      <div class="card-title">
+        Control test
+        <span class="tag tool">Tool</span>
+        <span class="arrow">→</span>
+      </div>
+      <div class="card-desc">The widget with the unmodified embed code, no inline changes. Use this to check whether a problem is the widget itself or the embedding.</div>
+    </a>
+
+    <a class="card" href="launcher-finder.html">
+      <div class="card-title">
+        Launcher finder
+        <span class="tag tool">Tool</span>
+        <span class="arrow">→</span>
+      </div>
+      <div class="card-desc">Lists every clickable element inside the widget's shadow DOM. Use this if a Sinch update breaks auto-open and you need the new label.</div>
+    </a>
+
+  </div>
+
+  <footer>
+    Each <code>.html</code> file in this repo becomes its own URL. Upload a file, add a card above, done.
+  </footer>
+
+</div>
+
+</body>
+</html>

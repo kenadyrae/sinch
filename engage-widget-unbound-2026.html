@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exclusive Merch Drops — Sinch</title>
+<style>
+  /* ============================================================
+     PAGE STYLING
+     Delete this whole block when pasting into an existing site.
+     ============================================================ */
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 48px 24px;
+    background: #f5f6f7;
+    color: #1a2126;
+  }
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    align-items: flex-start;
+  }
+  .copy { flex: 1 1 300px; }
+  .copy h1 { font-size: 28px; line-height: 1.25; margin: 0 0 12px; }
+  .copy p { color: #4b575e; line-height: 1.7; margin: 0 0 12px; }
+  /* ============================================================
+     END PAGE STYLING
+     ============================================================ */
+
+
+  /* ============================================================
+     WIDGET CONTAINER — required
+
+     width / height  : size of the area the widget lives in.
+                       The form needs more room than the icon, so
+                       if anything looks cut off, increase height.
+     ============================================================ */
+  #cs-inline {
+    position: relative;
+    transform: translateZ(0);   /* keeps the widget inside this box */
+    width: 420px;
+    height: 620px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  #cs-inline > [id^="SinchEngageWidget-"] {
+    position: static;
+    inset: auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="copy">
+    <h1>Exclusive Merch Drops</h1>
+    <p>Get notified about limited time giveaways at the Sinch booth.</p>
+    <p>Register with the form and we'll message you the moment the next drop goes live.</p>
+  </div>
+
+  <!-- ==========================================================
+       THE WIDGET — copy from here down into your own page,
+       along with the #cs-inline CSS block above.
+       ========================================================== -->
+
+  <div id="cs-inline"></div>
+
+  <script
+    src="https://releases.conversation-starters.au.saas.sinch.com/widget/latest/sinch-convs-widget-sdk.es.js"
+    type="module"
+    referrerpolicy="no-referrer-when-downgrade"
+  ></script>
+
+  <script>
+  (function () {
+
+    /* ---------------- SETTINGS ---------------- */
+
+    var ID     = 'e84911d4-af0b-41cb-8143-3663db53e94c';
+    var REGION = 'AU';
+
+    // Where the widget sits inside the container.
+    // 'top-left' | 'top-right' | 'top-center'
+    var PLACEMENT = 'top-left';
+
+    // Nudge away from the container edge, in pixels
+    var OFFSET_X = 0;
+    var OFFSET_Y = 0;
+
+    // Open the form automatically on page load.
+    // false leaves it as a click-to-open icon.
+    var AUTO_OPEN = true;
+
+    // Log progress to the browser console. Leave false in production.
+    var DEBUG = false;
+
+    /* -------------- END SETTINGS -------------- */
+
+
+    var CONTAINER_ID = 'cs-inline';
+
+    function log(msg) {
+      if (DEBUG) console.log('[inline widget] ' + msg);
+    }
+
+    function wait(test, ms) {
+      return new Promise(function (resolve, reject) {
+        var t0 = Date.now();
+        (function check() {
+          var r;
+          try { r = test(); } catch (e) { r = null; }
+          if (r) return resolve(r);
+          if (Date.now() - t0 > ms) return reject();
+          setTimeout(check, 300);
+        })();
+      });
+    }
+
+    // Search through nested shadow roots
+    function deepFind(root, selector) {
+      if (!root || !root.querySelector) return null;
+      var hit = root.querySelector(selector);
+      if (hit) return hit;
+      var all = root.querySelectorAll('*');
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].shadowRoot) {
+          var nested = deepFind(all[i].shadowRoot, selector);
+          if (nested) return nested;
+        }
+      }
+      return null;
+    }
+
+    // Every position:fixed element, with how deep it sits
+    function collectFixed(root, depth, out) {
+      out = out || [];
+      depth = depth || 0;
+      if (!root || !root.querySelectorAll) return out;
+      root.querySelectorAll('*').forEach(function (el) {
+        try {
+          if (getComputedStyle(el).position === 'fixed') {
+            out.push({ el: el, depth: depth });
+          }
+        } catch (e) {}
+        if (el.shadowRoot) collectFixed(el.shadowRoot, depth + 1, out);
+      });
+      return out;
+    }
+
+    // Move the widget WITHOUT touching top/bottom/left/right.
+    //
+    // Overriding those turns the panel from "stretched" into
+    // "content-sized", which collapses children using height:100%
+    // to zero. A transform slides it visually while leaving the
+    // widget's own layout calculations untouched.
+    function place(root) {
+      var found = collectFixed(root);
+      if (!found.length) return;
+
+      var minDepth  = Math.min.apply(null, found.map(function (f) { return f.depth; }));
+      var outermost = found.filter(function (f) { return f.depth === minDepth; });
+      var container = document.getElementById(CONTAINER_ID);
+      if (!container) return;
+      var box = container.getBoundingClientRect();
+
+      outermost.forEach(function (f) {
+        var el = f.el;
+        try {
+          // Measure with any previous transform removed
+          el.style.setProperty('transform', 'none', 'important');
+          var r = el.getBoundingClientRect();
+
+          var targetTop = box.top + OFFSET_Y;
+          var targetLeft;
+
+          if (PLACEMENT.indexOf('left') !== -1) {
+            targetLeft = box.left + OFFSET_X;
+          } else if (PLACEMENT.indexOf('right') !== -1) {
+            targetLeft = box.right - r.width - OFFSET_X;
+          } else {
+            targetLeft = box.left + (box.width - r.width) / 2;
+          }
+
+          el.style.setProperty(
+            'transform',
+            'translate(' + Math.round(targetLeft - r.left) + 'px, ' +
+                           Math.round(targetTop  - r.top)  + 'px)',
+            'important'
+          );
+        } catch (e) {}
+      });
+    }
+
+    function tryOpen(launcher) {
+      try { launcher.click(); } catch (e) {}
+      try {
+        launcher.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, composed: true })
+        );
+      } catch (e) {}
+    }
+
+    (async function () {
+      try {
+        // 1. Wait for the SDK to finish loading
+        await wait(function () {
+          return window.SinchSdk && window.SinchSdk.initialize;
+        }, 15000);
+        log('SDK loaded');
+
+        // 2. Start the widget. Do not await — it can hang without resolving.
+        SinchSdk.initialize(ID, REGION);
+
+        // 3. Wait for it to create its container on <body>
+        var host = await wait(function () {
+          return document.getElementById('SinchEngageWidget-' + ID);
+        }, 20000);
+
+        // 4. Move it into our box
+        document.getElementById(CONTAINER_ID).appendChild(host);
+        log('moved into container');
+
+        // 5. Wait for the lazy-loaded app to render.
+        //    If a future Sinch release renames these labels, run the
+        //    v5 diagnostic file to find the new one.
+        var launcher = await wait(function () {
+          return deepFind(host.shadowRoot, '[aria-label="Signup-form"]')
+              || deepFind(host.shadowRoot, '[aria-label="Growth icon"]');
+        }, 30000);
+        log('app rendered');
+
+        // 6. Position it
+        place(host.shadowRoot);
+
+        // 7. Keep it positioned as the widget re-renders between steps
+        new MutationObserver(function () {
+          place(host.shadowRoot);
+        }).observe(host.shadowRoot, { childList: true, subtree: true });
+
+        // 8. Re-position if the page is resized
+        window.addEventListener('resize', function () {
+          place(host.shadowRoot);
+        });
+
+        // 9. Open it, retrying — the first click can land before the
+        //    launcher has attached its handler.
+        if (AUTO_OPEN) {
+          var attempts = 0;
+          (function attempt() {
+            if (attempts >= 5) { log('auto-open gave up'); return; }
+            attempts++;
+            tryOpen(launcher);
+            setTimeout(function () {
+              if (collectFixed(host.shadowRoot).length >= 2) {
+                log('opened on attempt ' + attempts);
+              } else {
+                attempt();
+              }
+            }, 700);
+          })();
+        }
+
+      } catch (e) {
+        // If anything above fails the widget simply stays a normal
+        // corner popup. The page will not break.
+        if (DEBUG) console.warn('[inline widget] setup did not complete', e);
+      }
+    })();
+  })();
+  </script>
+
+  <!-- ==========================================================
+       END WIDGET
+       ========================================================== -->
+
+</div>
+
+</body>
+</html>
