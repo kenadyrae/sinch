@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opening Messages…</title>
+<style>
+  :root {
+    --bg: #0b0c10;
+    --card: #16181d;
+    --accent: #4f7cff;
+    --text: #f2f3f5;
+    --muted: #9aa0a8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0 0 24px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid #2a2d34;
+  }
+  .fallback {
+    margin-top: 20px;
+    display: none;
+  }
+  .fallback.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="spinner" id="spinner"></div>
+  <h1>Opening Messages…</h1>
+  <p id="statusText">Hang tight — we're launching your messaging app.</p>
+
+  <div class="fallback" id="fallback">
+    <a class="btn btn-primary" id="primaryLink" href="#">Open Messages</a>
+    <a class="btn btn-secondary" id="secondaryLink" href="#">Trouble opening? Tap here</a>
+  </div>
+</div>
+
+<script>
+  // ---- Configuration ----
+  var SHORT_CODE = "31853";
+  var RBM_SERVICE_ID = "mm_us_marketing_nnrfa4tv_agent%40rbm.goog";
+  var BODY_TEXT = "MERCH"; // already URL-safe, but encode defensively below
+
+  var encodedBody = encodeURIComponent(BODY_TEXT);
+
+  // Full RBM smart-link: Android + Google Messages will intercept this,
+  // check RCS availability for the agent, and fall back to SMS on its own
+  // if the recipient isn't RCS-capable.
+  var androidLink = "sms:" + SHORT_CODE + "?service_id=" + RBM_SERVICE_ID + "&body=" + encodedBody;
+
+  // iOS (and anything else) doesn't understand service_id — keep it to a
+  // plain SMS draft so nothing garbled ends up in the message body.
+  var iosLink = "sms:" + SHORT_CODE + "&body=" + encodedBody;
+
+  function detectPlatform() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    if (/android/i.test(ua)) return "android";
+    if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "ios";
+    return "other";
+  }
+
+  var platform = detectPlatform();
+  var targetLink = (platform === "android") ? androidLink : iosLink;
+
+  var primaryLink = document.getElementById("primaryLink");
+  var secondaryLink = document.getElementById("secondaryLink");
+  var fallback = document.getElementById("fallback");
+  var statusText = document.getElementById("statusText");
+  var spinner = document.getElementById("spinner");
+
+  primaryLink.href = targetLink;
+  secondaryLink.href = targetLink;
+
+  if (platform === "other") {
+    // Desktop / unknown device — no SMS app to hand off to.
+    spinner.style.display = "none";
+    statusText.textContent = "This link opens your device's messaging app. Open it on your phone, or tap below to try anyway.";
+    fallback.classList.add("show");
+  } else {
+    // Attempt the automatic redirect. Many mobile browsers require a user
+    // gesture for non-http schemes, so this may silently fail — that's
+    // what the fallback button below is for.
+    window.location.href = targetLink;
+
+    // Reveal the manual fallback shortly after, in case the auto-redirect
+    // didn't fire (page will still be visible if it was blocked).
+    setTimeout(function () {
+      spinner.style.display = "none";
+      statusText.textContent = "Didn't open automatically? Tap the button below.";
+      fallback.classList.add("show");
+    }, 1500);
+  }
+</script>
+
+</body>
+</html>
